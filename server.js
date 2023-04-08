@@ -1,56 +1,38 @@
-const express = require("express");
-const mongodb = require("mongodb");
+const express = require('express');
+const { MongoClient } = require('mongodb');
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-// MongoDB connection URI and database name
-const uri = "mongodb+srv://est:yLvwzxRC1J3ozhJo@cluster0.rmvzzax.mongodb.net/";
-const dbName = "mydb";
+const mongoURI = 'mongodb+srv://est:yLvwzxRC1J3ozhJo@cluster0.rmvzzax.mongodb.net/?retryWrites=true&w=majority';
+const dbName = 'mydb';
+const collectionName = 'keys';
 
-// Route to validate a key
-app.get("/key/:key", async (req, res) => {
+app.use(express.static('public'));
+
+app.get('/key/:key', async (req, res) => {
+  const key = req.params.key;
+
   try {
-    // Retrieve the key parameter from the request URL
-    const key = req.params.key;
-
-    // Create a new MongoDB client
-    const client = new mongodb.MongoClient(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    // Connect to the MongoDB cluster
-    await client.connect();
-
-    // Select the database and collection
+    const client = await MongoClient.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
     const db = client.db(dbName);
-    const collection = db.collection("keys");
+    const collection = db.collection(collectionName);
 
-    // Search for the key in the collection
-    const result = await collection.findOne({ key: key });
+    const doc = await collection.findOne({ key: key });
 
-    // Close the MongoDB client
-    await client.close();
-
-    // If the key was found, send a success response
-    if (result) {
-      res.send(`${key} is a valid key!`);
+    if (doc) {
+      res.send('Key is valid');
+    } else {
+      res.send('Key is invalid');
     }
-    // If the key was not found, send a failure response
-    else {
-      res.send(`${key} is not a valid key.`);
-    }
+
+    client.close();
   } catch (err) {
     console.error(err);
-    res.status(500).send("An error occurred.");
+    res.status(500).send('Error connecting to database');
   }
 });
 
-// Serve static files from the public directory
-app.use(express.static("public"));
-
-// Start the server
+const port = 3000;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
