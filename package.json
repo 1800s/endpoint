@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "express": "^4.17.1",
-    "mongodb": "^5.2.0"
+    "mongodb": "^5.2.0",
+    "mongoose": "^6.2.2"
+
   }
 }
