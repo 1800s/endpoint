@@ -1,29 +1,54 @@
-const express = require('express');
-const { MongoClient } = require('mongodb');
+const express = require("express");
+const mongodb = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Set up a MongoDB client and connect to the database
-const client = new MongoClient(process.env.MONGO_URI);
-client.connect();
+// MongoDB connection URI and database name
+const uri = "mongodb+srv://est:yLvwzxRC1J3ozhJo@cluster0.rmvzzax.mongodb.net/";
+const dbName = "mydb";
 
-// Serve static files from the 'public' directory
-app.use(express.static('public', { index: 'index.html' }));
+// Route to validate a key
+app.get("/key/:key", async (req, res) => {
+  try {
+    // Retrieve the key parameter from the request URL
+    const key = req.params.key;
 
-// Define the /key/:key endpoint
-app.get('/key/:key', async (req, res) => {
-  const key = req.params.key;
-  const db = client.db(process.env.MONGO_DB_NAME);
-  const keys = db.collection('keys');
-  const keyExists = await keys.findOne({ key: key });
+    // Create a new MongoDB client
+    const client = new mongodb.MongoClient(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
 
-  if (keyExists) {
-    res.send(`${key} exists in the database.`);
-  } else {
-    res.send(`${key} does not exist in the database.`);
+    // Connect to the MongoDB cluster
+    await client.connect();
+
+    // Select the database and collection
+    const db = client.db(dbName);
+    const collection = db.collection("keys");
+
+    // Search for the key in the collection
+    const result = await collection.findOne({ key: key });
+
+    // Close the MongoDB client
+    await client.close();
+
+    // If the key was found, send a success response
+    if (result) {
+      res.send(`${key} is a valid key!`);
+    }
+    // If the key was not found, send a failure response
+    else {
+      res.send(`${key} is not a valid key.`);
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("An error occurred.");
   }
 });
+
+// Serve static files from the public directory
+app.use(express.static("public"));
 
 // Start the server
 app.listen(port, () => {
